@@ -9,40 +9,43 @@ jobs:
     strategy:
       matrix:
         os:
-        - ubuntu-latest
-        - windows-latest
+          - ubuntu-latest
+          - windows-latest
         java:
-        - 8
-        - 11
-        - 17
-        - 21
-        - 22
+          - 8
+          - 11
+          - 17
+          - 21
+          - 22
       fail-fast: false
       max-parallel: 64
     name: test (${{ matrix.os }}, ${{ matrix.java }})
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
-      with:
-        java-version: ${{ matrix.java }}
-        distribution: zulu
-        cache: maven
-    - name: Build with Maven
-      run: ./mvnw -V --no-transfer-progress clean package
-    - name: Run unit test under ttl agent, include check for ExecutorService, ForkJoinPool,
-        Timer/TimerTask
-      working-directory: ttl2-compatible
-      run: |-
-        ../mvnw -V --no-transfer-progress -Penable-ttl-agent-for-test surefire:test '-Dttl.agent.extra.d.options=-Drun-ttl-test-under-agent-with-enable-timer-task=true'
-    - name: Run unit test under ttl agent, and turn on the disable inheritable for
-        thread pool enhancement
-      working-directory: ttl2-compatible
-      run: |-
-        ../mvnw -V --no-transfer-progress -Penable-ttl-agent-for-test surefire:test '-Dttl.agent.extra.args=ttl.agent.disable.inheritable.for.thread.pool:true' '-Dttl.agent.extra.d.options=-Drun-ttl-test-under-agent-with-disable-inheritable=true'
-    - name: Run agent check for Timer/TimerTask, explicit "ttl.agent.enable.timer.task"
-      working-directory: ttl2-compatible
-      run: |-
-        ../mvnw -V --no-transfer-progress -Penable-ttl-agent-for-test surefire:test '-Dttl.agent.extra.args=ttl.agent.enable.timer.task:true' '-Dttl.agent.extra.d.options=-Drun-ttl-test-under-agent-with-enable-timer-task=true'
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: zulu
+          cache: maven
+      - name: Build with Maven
+        run: ./mvnw -V --no-transfer-progress clean package "-Dmaven.test.skip=true"
+          "-DskipGeneratedSources" "-Dfailsafe.reports=false" "-Dsurefire.reportsDirectory=target/empty"
+          "-DgenerateSources=false" "-Dsurefire.reportFormat=none" "-Dtest.source.skip=true"
+          "-Dmaven.compiler.testSource=1.8" "-Dmaven.compiler.source=1.8" "-Dkotlin.code.generation.disabled=true"
+      - name: Run unit test under ttl agent, include check for ExecutorService, ForkJoinPool,
+          Timer/TimerTask
+        working-directory: ttl2-compatible
+        run: |-
+          ../mvnw -V --no-transfer-progress -Penable-ttl-agent-for-test surefire:test '-Dttl.agent.extra.d.options=-Drun-ttl-test-under-agent-with-enable-timer-task=true'
+      - name: Run unit test under ttl agent, and turn on the disable inheritable for
+          thread pool enhancement
+        working-directory: ttl2-compatible
+        run: |-
+          ../mvnw -V --no-transfer-progress -Penable-ttl-agent-for-test surefire:test '-Dttl.agent.extra.args=ttl.agent.disable.inheritable.for.thread.pool:true' '-Dttl.agent.extra.d.options=-Drun-ttl-test-under-agent-with-disable-inheritable=true'
+      - name: Run agent check for Timer/TimerTask, explicit "ttl.agent.enable.timer.task"
+        working-directory: ttl2-compatible
+        run: |-
+          ../mvnw -V --no-transfer-progress -Penable-ttl-agent-for-test surefire:test '-Dttl.agent.extra.args=ttl.agent.enable.timer.task:true' '-Dttl.agent.extra.d.options=-Drun-ttl-test-under-agent-with-enable-timer-task=true'
 'on':
-- push
-- workflow_dispatch
+  - push
+  - workflow_dispatch
